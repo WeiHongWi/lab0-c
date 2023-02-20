@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,9 @@
 
 
 /* Create an empty queue */
+struct list_head *merge_two_list(struct list_head *left,
+                                 struct list_head *right);
+
 struct list_head *q_new()
 {
     struct list_head *head = malloc(sizeof(struct list_head));
@@ -149,14 +153,13 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 /* Return number of elements in queue */
 int q_size(struct list_head *head)
 {
-    if (head == NULL) {
+    if (!head || list_empty(head)) {
         return 0;
     }
     int count = 0;
-    struct list_head *start = head;
-    while (head->next != start) {
+    element_t *item = NULL, *is = NULL;
+    list_for_each_entry_safe (item, is, head, list) {
         count += 1;
-        head = head->next;
     }
     return count;
 }
@@ -241,14 +244,28 @@ void q_reverse(struct list_head *head)
         struct list_head *temp = start->prev;
         start->prev = start->next;
         start->next = temp;
+        start = start->next;
         count -= 1;
     }
 }
 
-/* Reverse the nodes of the list k at a time */
-void q_reverseK(struct list_head *head, int k)
+
+static struct list_head *mergesort(struct list_head *head)
 {
-    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+    if (!head || !head->next) {
+        return head;
+    }
+
+    // Use the slow and fast pointer to find out the middle node of the list
+    struct list_head *fast = head->next, *slow = head;
+    for (; fast && fast->next; fast = fast->next->next) {
+        slow = slow->next;
+    }
+    // Now,object slow is in the middle of the list.
+    fast = slow->next;  // generate the type list_head* object right
+    slow->next = NULL;  // generate the type list_head* object left = head
+
+    return merge_two_list(mergesort(head), mergesort(fast));
 }
 
 /* Sort elements of queue in ascending order */
@@ -257,49 +274,46 @@ void q_sort(struct list_head *head)
     if (!head || list_empty(head) || list_is_singular(head)) {
         return;
     }
-    int path = 1;
-    int middle = q_size(head) / 2;
-    /*left:contain the value from  1 to middle , right: contain the value from
-     * middle+1 to head->prev*/
-
-    struct list_head *mid = head->next;
-    struct list_head left, right;
-    INIT_LIST_HEAD(&left);
-    INIT_LIST_HEAD(&right);
-
-    while (path <= middle) {
-        mid = mid->next;
-        path += 1;
-    }
-    /*left:(left,head,middle)*/
-    /*right:()*/
-    list_cut_position(&left, head, mid);
-    list_cut_position(&right, head, head->prev);
-
-    q_sort(&left);
-    q_sort(&right);
-
-    /*Compare the value between left and right*/
-    while (list_empty(&left) && list_empty(&right)) {
-        if (strcmp(list_first_entry(&left, element_t, list)->value,
-                   list_first_entry(&right, element_t, list)->value) <= 0) {
-            list_move_tail(left.next, head);
-        } else {
-            list_move_tail(right.next, head);
-        }
-    }
-    /*merge the remain part of the right or left*/
-    list_splice_tail(&left, head);
-    list_splice_tail(&right, head);
+    head->prev->next = NULL;
+    head->next = mergesort(head->next);
+    struct list_head *ptr = head;
+    for (; ptr->next; ptr = ptr->next)
+        ptr->next->prev = ptr;
+    ptr->next = head;
+    head->prev = ptr;
 }
-
-/* Remove every node which has a node with a strictly greater value anywhere to
- * the right side of it */
+/* Reverse the nodes of the list k at a time */
+void q_reverseK(struct list_head *head, int k)
+{
+    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+}
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
     return 0;
 }
+struct list_head *merge_two_list(struct list_head *left,
+                                 struct list_head *right)
+{
+    struct list_head *head = NULL, **indirect = &head, **cur = NULL;
+    while (left && right) {
+        if (strcmp(container_of(left, element_t, list)->value,
+                   container_of(right, element_t, list)->value) >= 0) {
+            cur = &right;
+        } else {
+            cur = &left;
+        }
+        *indirect = *cur;
+        indirect = &(*indirect)->next;
+        *cur = (*cur)->next;
+    }
+
+    *indirect = (struct list_head *) (void *) ((uintptr_t) (void *) left |
+                                               (uintptr_t) (void *) right);
+
+    return head;
+}
+
 
 /* Merge all the queues into one sorted queue, which is in ascending order */
 int q_merge(struct list_head *head)
