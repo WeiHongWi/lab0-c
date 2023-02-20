@@ -41,10 +41,10 @@ void q_free(struct list_head *l)
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
-    /*
     if (!head) {
         return false;
     }
+
     element_t *new_node = malloc(sizeof(element_t));
     if (!new_node) {
         return false;
@@ -65,7 +65,8 @@ bool q_insert_head(struct list_head *head, char *s)
     new_node->list.next = head->next;
     head->next = &new_node->list;
     new_node->list.next->prev = &new_node->list;
-    */
+
+    // cppcheck-suppress memleak
     return true;
 }
 
@@ -73,7 +74,6 @@ bool q_insert_head(struct list_head *head, char *s)
 /* Insert an element at tail of queue */
 bool q_insert_tail(struct list_head *head, char *s)
 {
-    /*
     if (!head) {
         return false;
     }
@@ -97,7 +97,7 @@ bool q_insert_tail(struct list_head *head, char *s)
     new_node->list.prev = head->prev;
     head->prev = &new_node->list;
     new_node->list.prev->next = &new_node->list;
-    */
+    // cppcheck-suppress memleak
     return true;
 }
 
