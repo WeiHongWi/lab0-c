@@ -234,9 +234,43 @@ void q_reverseK(struct list_head *head, int k)
 /* Sort elements of queue in ascending order */
 void q_sort(struct list_head *head)
 {
-    if (list_empty(head) || list_is_singular(head)) {
+    /*merge sort*/
+    if (!head || list_empty(head) || list_is_singular(head)) {
         return;
     }
+    int path = 1;
+    int middle = q_size(head) / 2;
+    /*left:contain the value from  1 to middle , right: contain the value from
+     * middle+1 to head->prev*/
+    struct list_head *mid = head->next;
+    struct list_head left, right;
+    INIT_LIST_HEAD(&left);
+    INIT_LIST_HEAD(&right);
+
+    while (path <= middle) {
+        mid = mid->next;
+        path += 1;
+    }
+    /*left:(left,head,middle)*/
+    /*right:()*/
+    list_cut_position(&left, head, mid);
+    list_cut_position(&right, head, head->prev);
+
+    q_sort(&left);
+    q_sort(&right);
+
+    /*Compare the value between left and right*/
+    while (list_empty(&left) && list_empty(&right)) {
+        if (strcmp(list_first_entry(&left, element_t, list)->value,
+                   list_first_entry(&right, element_t, list)->value) <= 0) {
+            list_move_tail(left.next, head);
+        } else {
+            list_move_tail(right.next, head);
+        }
+    }
+    /*merge the remain part of the right or left*/
+    list_splice_tail(&left, head);
+    list_splice_tail(&right, head);
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
