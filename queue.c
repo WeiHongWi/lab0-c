@@ -111,19 +111,15 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head)) {
         return NULL;
     }
-    struct list_head *next = (head->next)->next;
-
 
     element_t *remove_node = list_first_entry(head, element_t, list);
 
-    head->next = next;
-    next->prev = head;
-
-    if (sp != NULL) {
-        strncpy(sp + strlen(sp), remove_node->value, bufsize - 1 - strlen(sp));
+    if (sp) {
+        strncpy(sp, remove_node->value, bufsize);
         sp[bufsize - 1] = '\0';
     }
 
+    list_del_init(head->next);
 
     return remove_node;
 }
@@ -135,18 +131,14 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
     }
 
-    struct list_head *prev = (head->prev)->prev;
     // queue_contex_t *start_queue = list_entry(head,queue_contex_t,q);
     element_t *remove_node = list_last_entry(head, element_t, list);
 
-    head->prev = prev;
-    prev->next = head;
-
-    if (sp != NULL) {
-        strncpy(sp, remove_node->value, bufsize - 1);
+    if (sp) {
+        strncpy(sp, remove_node->value, bufsize);
         sp[bufsize - 1] = '\0';
     }
-
+    list_del_init(head->prev);
     return remove_node;
 }
 
