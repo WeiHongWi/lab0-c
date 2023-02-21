@@ -21,22 +21,23 @@ struct list_head *q_new()
 {
     struct list_head *head = malloc(sizeof(struct list_head));
     // Ensure that the head is not NULL.
-    if (head != NULL) {
+    if (head) {
         INIT_LIST_HEAD(head);
+    } else {
+        return NULL;
     }
-
     return head;
 }
 
 /* Free all storage used by queue */
 void q_free(struct list_head *l)
 {
-    if (!l || list_empty(l)) {
+    if (!l) {
         return;
     }
     element_t *item = NULL, *is = NULL;
     list_for_each_entry_safe (item, is, l, list) {
-        /*list_del(&item->list);*/
+        list_del(&item->list);
         q_release_element(item);
     }
     free(l);
@@ -53,8 +54,6 @@ bool q_insert_head(struct list_head *head, char *s)
     if (!new_node) {
         return false;
     }
-
-
     // Copy the input argument s to the member value in the object new_node
     new_node->value = malloc(strlen(s) + 1);
     if (!new_node->value) {
@@ -101,6 +100,7 @@ bool q_insert_tail(struct list_head *head, char *s)
     new_node->list.prev = head->prev;
     head->prev = &new_node->list;
     new_node->list.prev->next = &new_node->list;
+
     // cppcheck-suppress memleak
     return true;
 }
@@ -241,7 +241,6 @@ void q_reverse(struct list_head *head)
     }
 }
 
-
 static struct list_head *mergesort(struct list_head *head)
 {
     if (!head || !head->next) {
@@ -277,12 +276,33 @@ void q_sort(struct list_head *head)
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
 {
+    if (!head || list_empty(head) != 0 || list_is_singular(head) != 0 || k < 2)
+        return;
+
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head)) {
+        return 0;
+    }
+    if (list_is_singular(head)) {
+        return 1;
+    }
+    q_reverse(head);
+    element_t *pivot = list_first_entry(head, element_t, list);
+
+    element_t *item = NULL, *is = NULL;
+    list_for_each_entry_safe (item, is, head, list) {
+        if (strcmp(pivot->value, item->value) > 0) {
+            list_del(&item->list);
+        } else {
+            pivot = item;
+        }
+    }
+    q_reverse(head);
+    return q_size(head);
 }
 struct list_head *merge_two_list(struct list_head *left,
                                  struct list_head *right)
@@ -310,6 +330,12 @@ struct list_head *merge_two_list(struct list_head *left,
 /* Merge all the queues into one sorted queue, which is in ascending order */
 int q_merge(struct list_head *head)
 {
+    // all queues are all sorted
     // https://leetcode.com/problems/merge-k-sorted-lists/
+    if (!head || list_empty(head)) {
+        return 0;
+    }
+
+
     return 0;
 }
