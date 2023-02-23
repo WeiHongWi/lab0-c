@@ -193,10 +193,36 @@ bool q_delete_mid(struct list_head *head)
 /* Delete all nodes that have duplicate string */
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    // sorted,we can use the two pointer to solve this problem
+    //  https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
 
+    if (!head)
+        return false;
+    struct list_head *cur = head->next;
+    while (cur != head) {
+        if (cur->next != head) {
+            struct list_head *safe = cur->next;
+            element_t *c = container_of(cur, element_t, list),
+                      *n = container_of(cur->next, element_t, list);
+            if (!strcmp(c->value, n->value)) {
+                do {
+                    struct list_head *next = n->list.next;
+                    list_del(&n->list);
+                    q_release_element(n);
+                    if (next == head)
+                        break;
+                    n = container_of(next, element_t, list);
+                } while (!strcmp(c->value, n->value));
+                safe = cur->next;
+                list_del(&c->list);
+                q_release_element(c);
+            }
+            cur = safe;
+        }
+    }
     return true;
 }
+
 
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
@@ -276,10 +302,26 @@ void q_sort(struct list_head *head)
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
 {
-    if (!head || list_empty(head) != 0 || list_is_singular(head) != 0 || k < 2)
+    if (!head || k <= 1)
         return;
+    struct list_head *node = head->next;
+    struct list_head *safe = node->next;
+    struct list_head *temp = head;
+    LIST_HEAD(temp_node);
+    int count = 1;
 
-    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+    while (node != head) {
+        if (count == k) {
+            list_cut_position(&temp_node, temp, node);
+            q_reverse(&temp_node);
+            list_splice_init(&temp_node, temp);
+            count = 0;
+            temp = safe->prev;
+        }
+        count += 1;
+        node = safe;
+        safe = node->next;
+    }
 }
 int q_descend(struct list_head *head)
 {
@@ -297,6 +339,7 @@ int q_descend(struct list_head *head)
     list_for_each_entry_safe (item, is, head, list) {
         if (strcmp(pivot->value, item->value) > 0) {
             list_del(&item->list);
+            q_release_element(item);
         } else {
             pivot = item;
         }
