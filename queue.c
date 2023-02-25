@@ -195,36 +195,35 @@ bool q_delete_dup(struct list_head *head)
 {
     // sorted,we can use the two pointer to solve this problem
     //  https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
-
     if (!head)
         return false;
-    struct list_head *cur = head->next;
-    while (cur != head) {
-        if (cur->next != head) {
-            struct list_head *safe = cur->next;
-            element_t *c = container_of(cur, element_t, list),
-                      *n = container_of(cur->next, element_t, list);
-            if (!strcmp(c->value, n->value)) {
+    struct list_head *start = head->next;
+
+    while (start != head) {
+        if (start->next != head) {
+            struct list_head *end = start->next;
+            element_t *curr = container_of(start, element_t, list);
+            element_t *next = container_of(end, element_t, list);
+            if (!strcmp(curr->value, next->value)) {
                 do {
-                    struct list_head *next = n->list.next;
-                    list_del(&n->list);
-                    q_release_element(n);
-                    if (next == head)
+                    struct list_head *temp = next->list.next;
+                    list_del_init(&next->list);
+                    q_release_element(next);
+                    if (temp == head) {
                         break;
-                    n = container_of(next, element_t, list);
-                } while (!strcmp(c->value, n->value));
-                safe = cur->next;
-                list_del(&c->list);
-                q_release_element(c);
+                    }
+                    next = container_of(temp, element_t, list);
+                } while (!strcmp(curr->value, next->value));
+                end = start->next;
+                list_del_init(&curr->list);
+                q_release_element(curr);
             }
-            cur = safe;
+            start = end;
         }
     }
     return true;
 }
 
-
-/* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
@@ -370,15 +369,49 @@ struct list_head *merge_two_list(struct list_head *left,
 }
 
 
+
 /* Merge all the queues into one sorted queue, which is in ascending order */
 int q_merge(struct list_head *head)
 {
     // all queues are all sorted
     // https://leetcode.com/problems/merge-k-sorted-lists/
-    if (!head || list_empty(head)) {
+
+    if (!head || list_empty(head))
         return 0;
+    queue_contex_t *fir = container_of(head->next, queue_contex_t, chain);
+    if (head->next == head->prev)
+        return fir->size;
+    for (struct list_head *cur = head->next->next; cur != head;
+         cur = cur->next) {
+        queue_contex_t *que = container_of(cur, queue_contex_t, chain);
+        list_splice_init(que->q, fir->q);
+        que->size = 0;
+    }
+    q_sort(fir->q);
+    fir->size = q_size(fir->q);
+    return fir->size;
+}
+
+/*shuffle the order of the queue*/
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head)) {
+        return;
     }
 
-
-    return 0;
+    int len = q_size(head);
+    /*So, the random number that we generate is between 0 ~ len-1*/
+    while (len - 1 >= 0) {
+        struct list_head *old = head->next;
+        /*In order to generate the number between 0~ len-1 , use module %*/
+        int random_number = rand() % len;
+        for (; random_number > 0; random_number--) {
+            old = old->next;
+        }
+        /*Every choice add to the tail of list to generate the random order of
+         * queue*/
+        list_del_init(old);
+        list_add_tail(old, head);
+        len -= 1;
+    }
 }
